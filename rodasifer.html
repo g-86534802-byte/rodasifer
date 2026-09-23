@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RODA CAESAR CIPHER</title>
+    <style>
+        :root {
+            --primary-green: #10b981;
+            --primary-red: #ef4444;
+            --bg-light-blue: #87CEFA;
+            --panel-bg: #f8fafc;
+            --text-dark: #1e293b;
+            --glow-green: #00ff88;
+            --glow-red: #ff3366;
+            --glow-blue: #38bdf8;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light-blue);
+            color: var(--text-dark);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            user-select: none;
+        }
+
+        h1 { color: #1e293b; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 2px; font-size: 1.8rem; text-align: center; }
+        .subtitle { color: #047857; font-size: 0.95rem; margin-bottom: 15px; font-weight: 700; text-align: center; }
+
+        /* JALUR ANIMASI */
+        .dual-strip-section {
+            width: 100%; max-width: 980px; background: #ffffff;
+            border: 3px solid var(--primary-green); border-radius: 12px;
+            padding: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.12); margin-bottom: 20px; box-sizing: border-box;
+        }
+
+        .strip-title { font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; }
+
+        .strip-container {
+            display: flex; justify-content: space-between; overflow-x: auto;
+            padding: 22px 5px 10px 5px; background: #f1f5f9; border-radius: 8px;
+            border: 1px solid #cbd5e1; margin-bottom: 12px; position: relative;
+        }
+
+        .strip-box {
+            display: flex; flex-direction: column; align-items: center;
+            min-width: 32px; padding: 4px 2px; border-radius: 6px; transition: all 0.3s ease; position: relative;
+        }
+
+        .strip-char { font-family: 'Courier New', Courier, monospace; font-weight: bold; font-size: 1.1rem; color: #334155; }
+        
+        .strip-arrow-tag {
+            position: absolute; top: -22px; font-size: 1.2rem; font-weight: bold; display: none;
+            animation: bounceArrow 0.4s infinite alternate;
+        }
+
+        @keyframes bounceArrow { 0% { transform: translateY(0); } 100% { transform: translateY(-5px); } }
+
+        .strip-box.active-source { background-color: var(--primary-green) !important; transform: scale(1.2); }
+        .strip-box.active-source .strip-char { color: white !important; }
+        .strip-box.active-step { background-color: #fef08a; border: 2px solid #eab308; }
+        .strip-box.active-target { background-color: var(--primary-red) !important; transform: scale(1.25); box-shadow: 0 0 10px rgba(239, 68, 68, 0.6); }
+        .strip-box.active-target .strip-char { color: white !important; }
+
+        .container { display: flex; flex-direction: row; gap: 25px; max-width: 980px; width: 100%; justify-content: center; }
+        @media (max-width: 850px) { .container { flex-direction: column; align-items: center; } }
+
+        /* RODA SIFER INTERAKTIF 3D & GLOWING EFFECT */
+        .wheel-area {
+            position: relative; width: 360px; height: 360px; display: flex;
+            justify-content: center; align-items: center; background: #ffffff;
+            border-radius: 50%; border: 4px solid var(--primary-green);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2), inset 0 0 15px rgba(0,0,0,0.05);
+            touch-action: none; cursor: grab;
+        }
+        .wheel-area:active { cursor: grabbing; }
+
+        .wheel-svg-overlay {
+            position: absolute; top: 0; left: 0; width: 360px; height: 360px;
+            pointer-events: none; z-index: 8;
+        }
+
+        .wheel-outer {
+            width: 330px; height: 330px; border-radius: 50%; background: #ecfdf5;
+            border: 3px solid var(--primary-green); position: absolute; display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+        }
+
+        .wheel-inner {
+            width: 220px; height: 220px; border-radius: 50%; background: #ffffff;
+            border: 3px solid var(--primary-red); position: absolute;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+            transition: transform 0.1s ease-out;
+        }
+
+        .center-hub {
+            width: 70px; height: 70px; border-radius: 50%; background: #0f172a;
+            border: 3px solid var(--primary-green); z-index: 9; display: flex; justify-content: center; align-items: center;
+            font-weight: bold; color: var(--glow-green); font-size: 0.95rem;
+            box-shadow: 0 0 12px rgba(0, 255, 136, 0.5);
+            text-shadow: 0 0 8px var(--glow-green);
+        }
+
+        .letter {
+            position: absolute; font-weight: bold; font-size: 0.95rem; height: 50%;
+            padding-top: 5px; transform-origin: bottom center; bottom: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .wheel-outer .letter { color: #047857; }
+        .wheel-inner .letter { color: var(--primary-red); }
+
+        /* KESAN GLOWING NEON APABILA DI-HIGHLIGHT */
+        .letter.glow-green-wheel {
+            color: #000 !important;
+            text-shadow: 0 0 8px var(--glow-green), 0 0 15px var(--glow-green);
+            font-size: 1.25rem;
+            font-weight: 900;
+        }
+        .letter.glow-red-wheel {
+            color: #000 !important;
+            text-shadow: 0 0 8px var(--glow-red), 0 0 15px var(--glow-red);
+            font-size: 1.25rem;
+            font-weight: 900;
+        }
+
+        .wheel-legend {
+            position: absolute; bottom: -35px; display: flex; gap: 15px; font-size: 0.8rem; font-weight: bold;
+        }
+        .leg-item { display: flex; align-items: center; gap: 4px; }
+
+        /* PANEL KAWALAN */
+        .control-panel {
+            background-color: var(--panel-bg); padding: 18px; border-radius: 12px;
+            border: 1px solid #cbd5e1; flex: 1; max-width: 450px; box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+        .input-group { margin-bottom: 12px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #1e293b; font-size: 0.85rem; }
+        input[type="number"], input[type="text"] {
+            width: 100%; padding: 8px 10px; background: #ffffff; border: 2px solid #cbd5e1;
+            border-radius: 6px; color: #1e293b; font-size: 0.95rem; box-sizing: border-box;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .btn-single {
+            flex: 2; padding: 12px; font-weight: bold; border: none; border-radius: 6px;
+            cursor: pointer; transition: 0.2s; text-transform: uppercase; font-size: 0.85rem;
+            background-color: #0284c7; color: white;
+        }
+        .btn-single:hover { background-color: #0369a1; }
+
+        .btn-reset {
+            flex: 1; padding: 12px; font-weight: bold; border: none; border-radius: 6px;
+            cursor: pointer; transition: 0.2s; text-transform: uppercase; font-size: 0.85rem;
+            background-color: #64748b; color: white;
+        }
+        .btn-reset:hover { background-color: #475569; }
+
+        .status-box {
+            margin-top: 15px; padding: 12px; background: #ecfdf5; border: 1px solid #a7f3d0;
+            border-radius: 6px; text-align: center; color: #047857; font-weight: bold; font-size: 0.85rem;
+        }
+
+        /* RUANGAN JAWAPAN */
+        .results-wrapper {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .result-card {
+            flex: 1;
+            padding: 10px;
+            background: #ffffff;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .card-enc { border-top: 4px solid var(--primary-green); }
+        .card-dec { border-top: 4px solid var(--primary-red); }
+
+        .card-label {
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .card-enc .card-label { color: #047857; }
+        .card-dec .card-label { color: #dc2626; }
+
+        .result-text {
+            font-size: 1.15rem;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            color: #0f172a;
+            letter-spacing: 1.5px;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>RODA CAESAR CIPHER</h1>
+    <div class="subtitle">💡 Sila Putar Roda Dalam Menggunakan Tetikus/Skrin Sentuh Atau Taip Nilai (n)!</div>
+
+    <div class="dual-strip-section">
+        <div class="strip-title" style="color: #10b981;">🟢 1. PENYULITAN (HURUF DIANJAKKAN KE KANAN MENGIKUT NILAI ANJAKAN)</div>
+        <div class="strip-container enc-strip" id="encStripContainer"></div>
+
+        <div class="strip-title" style="color: #ef4444;">🔴 2. NYAHSULIT (HURUF DIANJAKKAN KE KIRI MENGIKUT NILAI ANJAKAN)</div>
+        <div class="strip-container dec-strip" id="decStripContainer"></div>
+    </div>
+
+    <div class="container">
+        <div class="wheel-area" id="interactiveWheelArea">
+            <svg class="wheel-svg-overlay" id="wheelSvg" viewBox="0 0 360 360">
+                <defs>
+                    <marker id="arrowhead-blue" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                        <polygon points="0 0, 6 3, 0 6" fill="#0284c7" />
+                    </marker>
+                    <marker id="arrowhead-red" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                        <polygon points="0 0, 6 3, 0 6" fill="#ef4444" />
+                    </marker>
+                </defs>
+            </svg>
+
+            <div class="wheel-outer" id="outerWheel"></div>
+            <div class="wheel-inner" id="innerWheel"></div>
+            <div class="center-hub" id="hubKey">n = 0</div>
+
+            <div class="wheel-legend">
+                <span class="leg-item" style="color: #047857;">🟢 Roda Luar: Teks Asal</span>
+                <span class="leg-item" style="color: #ef4444;">🔴 Roda Dalam: Teks Sulit</span>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="input-group">
+                <label for="keyInput">Nilai Anjakan / Kunci (n):</label>
+                <input type="number" id="keyInput" min="0" max="25" value="" placeholder="Sila taip nilai n (contoh: 3)" oninput="handleManualInputChange()">
+            </div>
+
+            <div class="input-group">
+                <label for="textInput">Masukkan Teks Huruf (A-Z):</label>
+                <input type="text" id="textInput" value="" placeholder="Sila taip teks huruf (contoh: DATA)" style="text-transform: uppercase;" oninput="handleManualInputChange()">
+            </div>
+
+            <div class="button-group">
+                <button class="btn-single" onclick="startSingleWheelDemo()">🎡 SIMULASI RODA</button>
+                <button class="btn-reset" onclick="manualReset()">🔄 RESET</button>
+            </div>
+
+            <div class="status-box" id="statusBox">Sila masukkan Nilai Anjakan (n) & Teks Huruf untuk memulakan.</div>
+
+            <div class="results-wrapper">
+                <div class="result-card card-enc">
+                    <div class="card-label">🟢 HASIL PENYULITAN (+n):</div>
+                    <div class="result-text" id="encDisplay">-</div>
+                </div>
+
+                <div class="result-card card-dec">
+                    <div class="card-label">🔴 HASIL NYAHSULIT (-n):</div>
+                    <div class="result-text" id="decDisplay">-</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+        const encStripContainer = document.getElementById('encStripContainer');
+        const decStripContainer = document.getElementById('decStripContainer');
+        const outerWheel = document.getElementById('outerWheel');
+        const innerWheel = document.getElementById('innerWheel');
+        const keyInput = document.getElementById('keyInput');
+        const hubKey = document.getElementById('hubKey');
+        const textInput = document.getElementById('textInput');
+        const encDisplay = document.getElementById('encDisplay');
+        const decDisplay = document.getElementById('decDisplay');
+        const statusBox = document.getElementById('statusBox');
+        const wheelSvg = document.getElementById('wheelSvg');
+        const wheelArea = document.getElementById('interactiveWheelArea');
+
+        let currentRotationAngle = 0;
+        let isDragging = false;
+        let startAngle = 0;
+        let activeShiftN = 0;
+
+        function buildStrips() {
+            encStripContainer.innerHTML = "";
+            decStripContainer.innerHTML = "";
+            alphabet.forEach((char, index) => {
+                encStripContainer.innerHTML += `<div class="strip-box" id="enc-box-${index}"><span class="strip-arrow-tag" id="enc-arrow-${index}" style="color:#10b981;">🠖</span><span class="strip-char">${char}</span></div>`;
+                decStripContainer.innerHTML += `<div class="strip-box" id="dec-box-${index}"><span class="strip-arrow-tag" id="dec-arrow-${index}" style="color:#ef4444;">🠔</span><span class="strip-char">${char}</span></div>`;
+            });
+        }
+
+        function generateWheels() {
+            outerWheel.innerHTML = ""; innerWheel.innerHTML = "";
+            for (let i = 0; i < 26; i++) {
+                const angle = (i * 360) / 26;
+                outerWheel.innerHTML += `<div class="letter" id="outer-let-${i}" style="transform: rotate(${angle}deg);">${alphabet[i]}</div>`;
+                innerWheel.innerHTML += `<div class="letter" id="inner-let-${i}" style="transform: rotate(${angle}deg);">${alphabet[i]}</div>`;
+            }
+        }
+
+        function clearWheelArrows() {
+            const lines = wheelSvg.querySelectorAll('.wheel-arrow-line');
+            lines.forEach(l => l.remove());
+        }
+
+        function clearGlowEffects() {
+            document.querySelectorAll('.letter').forEach(el => {
+                el.classList.remove('glow-green-wheel', 'glow-red-wheel');
+            });
+        }
+
+        // Mapping Logic: Encryption (Green Outer -> Red Inner) & Decryption (Red Inner -> Green Outer)
+        function drawWheelArrowsForText(inputTxt, nValue) {
+            clearWheelArrows();
+            clearGlowEffects();
+
+            const center = 180;
+            const rOuter = 125;
+            const rInner = 105;
+
+            const uniqueChars = Array.from(new Set(inputTxt.split('')));
+
+            uniqueChars.forEach(char => {
+                const srcIdx = alphabet.indexOf(char);
+                if (srcIdx === -1) return;
+
+                // ----------------------------------------------------
+                // 1. PENYULITAN (ENCRYPTION): RODA LUAR (HIJAU) -> RODA DALAM (MERAH)
+                // ----------------------------------------------------
+                // Highlight huruf asal input pada Roda Luar (Hijau)
+                const outerLetEnc = document.getElementById(`outer-let-${srcIdx}`);
+                if(outerLetEnc) outerLetEnc.classList.add('glow-green-wheel');
+
+                // Highlight huruf hasil sulit pada Roda Dalam (Merah)
+                const encIdx = (srcIdx + nValue) % 26;
+                const innerLetEnc = document.getElementById(`inner-let-${encIdx}`);
+                if(innerLetEnc) innerLetEnc.classList.add('glow-red-wheel');
+
+                // Lukis anak panah Biru (Penyulitan)
+                const outerAngleEncDeg = (srcIdx * 360) / 26 - 90;
+                const outerEncRad = outerAngleEncDeg * (Math.PI / 180);
+                const x1_enc = center + rOuter * Math.cos(outerEncRad);
+                const y1_enc = center + rOuter * Math.sin(outerEncRad);
+
+                const innerAngleEncDeg = ((encIdx - nValue + 26) % 26 * 360) / 26 - 90;
+                const innerEncRad = innerAngleEncDeg * (Math.PI / 180);
+                const x2_enc = center + rInner * Math.cos(innerEncRad);
+                const y2_enc = center + rInner * Math.sin(innerEncRad);
+
+                const lineEnc = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                lineEnc.setAttribute('x1', x1_enc);
+                lineEnc.setAttribute('y1', y1_enc);
+                lineEnc.setAttribute('x2', x2_enc);
+                lineEnc.setAttribute('y2', y2_enc);
+                lineEnc.setAttribute('stroke', '#0284c7');
+                lineEnc.setAttribute('stroke-width', '2.5');
+                lineEnc.setAttribute('stroke-dasharray', '3,2');
+                lineEnc.setAttribute('marker-end', 'url(#arrowhead-blue)');
+                lineEnc.setAttribute('class', 'wheel-arrow-line');
+                wheelSvg.appendChild(lineEnc);
+
+                // ----------------------------------------------------
+                // 2. NYAHSULIT (DECRYPTION): RODA DALAM (MERAH) -> RODA LUAR (HIJAU)
+                // ----------------------------------------------------
+                // Highlight huruf asal input teks sulit pada RODA DALAM (MERAH)
+                const innerLetDecSource = document.getElementById(`inner-let-${srcIdx}`);
+                if(innerLetDecSource) innerLetDecSource.classList.add('glow-red-wheel');
+
+                // Highlight huruf hasil nyahsulit pada RODA LUAR (HIJAU)
+                const decIdx = (srcIdx - nValue + 26) % 26;
+                const outerLetDecTarget = document.getElementById(`outer-let-${decIdx}`);
+                if(outerLetDecTarget) outerLetDecTarget.classList.add('glow-green-wheel');
+
+                // Lukis anak panah Merah (Nyahsulit: Roda Dalam -> Roda Luar)
+                const innerAngleDecDeg = ((srcIdx - nValue + 26) % 26 * 360) / 26 - 90;
+                const innerDecRad = innerAngleDecDeg * (Math.PI / 180);
+                const x1_dec = center + rInner * Math.cos(innerDecRad);
+                const y1_dec = center + rInner * Math.sin(innerDecRad);
+
+                const outerAngleDecDeg = (decIdx * 360) / 26 - 90;
+                const outerDecRad = outerAngleDecDeg * (Math.PI / 180);
+                const x2_dec = center + rOuter * Math.cos(outerDecRad);
+                const y2_dec = center + rOuter * Math.sin(outerDecRad);
+
+                const lineDec = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                lineDec.setAttribute('x1', x1_dec);
+                lineDec.setAttribute('y1', y1_dec);
+                lineDec.setAttribute('x2', x2_dec);
+                lineDec.setAttribute('y2', y2_dec);
+                lineDec.setAttribute('stroke', '#ef4444');
+                lineDec.setAttribute('stroke-width', '2.5');
+                lineDec.setAttribute('stroke-dasharray', '3,2');
+                lineDec.setAttribute('marker-end', 'url(#arrowhead-red)');
+                lineDec.setAttribute('class', 'wheel-arrow-line');
+                wheelSvg.appendChild(lineDec);
+            });
+        }
+
+        function resetStrips() {
+            for (let i = 0; i < 26; i++) {
+                let eb = document.getElementById(`enc-box-${i}`);
+                let db = document.getElementById(`dec-box-${i}`);
+                let ea = document.getElementById(`enc-arrow-${i}`);
+                let da = document.getElementById(`dec-arrow-${i}`);
+                if(eb) eb.className = 'strip-box';
+                if(db) db.className = 'strip-box';
+                if(ea) ea.style.display = 'none';
+                if(da) da.style.display = 'none';
+            }
+        }
+
+        function updateRealtimeOutputs(nVal) {
+            activeShiftN = nVal;
+            keyInput.value = nVal;
+            hubKey.innerText = `n = ${nVal}`;
+            
+            const inputTxt = textInput.value.toUpperCase().replace(/[^A-Z]/g, '');
+
+            if (inputTxt) {
+                let fullEncResult = "";
+                let fullDecResult = "";
+
+                for (let i = 0; i < inputTxt.length; i++) {
+                    let idx = alphabet.indexOf(inputTxt[i]);
+                    fullEncResult += alphabet[(idx + nVal) % 26];
+                    fullDecResult += alphabet[(idx - nVal + 26) % 26];
+                }
+
+                encDisplay.innerText = fullEncResult;
+                decDisplay.innerText = fullDecResult;
+                drawWheelArrowsForText(inputTxt, nVal);
+            } else {
+                encDisplay.innerText = "-";
+                decDisplay.innerText = "-";
+                clearWheelArrows();
+                clearGlowEffects();
+            }
+        }
+
+        function handleManualInputChange() {
+            let rawKey = keyInput.value;
+            if (rawKey !== "" && !isNaN(rawKey)) {
+                let nVal = parseInt(rawKey) % 26;
+                let stepAngle = 360 / 26;
+                currentRotationAngle = - (nVal * stepAngle);
+                innerWheel.style.transition = 'transform 0.3s ease-out';
+                innerWheel.style.transform = `rotate(${currentRotationAngle}deg)`;
+                updateRealtimeOutputs(nVal);
+            } else {
+                updateRealtimeOutputs(activeShiftN);
+            }
+        }
+
+        /* --- DRAG & ROTATE TOUCH / MOUSE INTERACTION --- */
+        function getAngle(clientX, clientY) {
+            const rect = wheelArea.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const dx = clientX - centerX;
+            const dy = clientY - centerY;
+            return Math.atan2(dy, dx) * (180 / Math.PI);
+        }
+
+        function onPointerDown(e) {
+            isDragging = true;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            startAngle = getAngle(clientX, clientY) - currentRotationAngle;
+            innerWheel.style.transition = 'none';
+        }
+
+        function onPointerMove(e) {
+            if (!isDragging) return;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            currentRotationAngle = getAngle(clientX, clientY) - startAngle;
+            innerWheel.style.transform = `rotate(${currentRotationAngle}deg)`;
+
+            let normalizedAngle = (-currentRotationAngle % 360 + 360) % 360;
+            let nCalculated = Math.round((normalizedAngle / 360) * 26) % 26;
+
+            updateRealtimeOutputs(nCalculated);
+            statusBox.innerHTML = `🎡 Roda diputar secara langsung: <b>n = ${nCalculated}</b>`;
+        }
+
+        function onPointerUp() {
+            if (!isDragging) return;
+            isDragging = false;
+            innerWheel.style.transition = 'transform 0.3s cubic-bezier(0.15, 0.85, 0.35, 1)';
+
+            let stepAngle = 360 / 26;
+            let snapN = activeShiftN;
+            currentRotationAngle = - (snapN * stepAngle);
+            innerWheel.style.transform = `rotate(${currentRotationAngle}deg)`;
+
+            statusBox.innerHTML = `✅ Roda diselaraskan pada Kunci Anjakan <b>n = ${snapN}</b>!`;
+        }
+
+        wheelArea.addEventListener('mousedown', onPointerDown);
+        window.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerUp);
+
+        wheelArea.addEventListener('touchstart', onPointerDown);
+        window.addEventListener('touchmove', onPointerMove);
+        window.addEventListener('touchend', onPointerUp);
+
+        function manualReset() {
+            textInput.value = "";
+            keyInput.value = "";
+            encDisplay.innerText = "-";
+            decDisplay.innerText = "-";
+            resetStrips();
+            clearWheelArrows();
+            clearGlowEffects();
+            
+            currentRotationAngle = 0;
+            innerWheel.style.transform = `rotate(0deg)`;
+            hubKey.innerText = `n = 0`;
+            activeShiftN = 0;
+            
+            statusBox.innerText = "Sistem telah direset. Sedia untuk input baharu.";
+        }
+
+        function startSingleWheelDemo() {
+            let rawKey = keyInput.value;
+            const inputTxt = textInput.value.toUpperCase().replace(/[^A-Z]/g, '');
+
+            if (rawKey === "" || isNaN(rawKey)) {
+                statusBox.innerText = "⚠️ Sila masukkan nilai anjakan (n) dahulu!";
+                keyInput.focus();
+                return;
+            }
+
+            if (!inputTxt) {
+                statusBox.innerText = "⚠️ Sila masukkan teks huruf A-Z dahulu!";
+                textInput.focus();
+                return;
+            }
+
+            let nValue = parseInt(rawKey) % 26;
+
+            resetStrips();
+            clearWheelArrows();
+
+            let targetDegree = - (nValue * 360 / 26);
+            currentRotationAngle = targetDegree - 720; 
+
+            innerWheel.style.transition = 'transform 2s cubic-bezier(0.15, 0.85, 0.35, 1)';
+            innerWheel.style.transform = `rotate(${currentRotationAngle}deg)`;
+            statusBox.innerHTML = `⏳ 🎡 Roda sedang berputar melaras kedudukan <b>n = ${nValue}</b>...`;
+
+            setTimeout(() => {
+                updateRealtimeOutputs(nValue);
+
+                const firstChar = inputTxt[0];
+                const srcIdx = alphabet.indexOf(firstChar);
+                let step = 0;
+
+                document.getElementById(`enc-box-${srcIdx}`).classList.add('active-source');
+                document.getElementById(`dec-box-${srcIdx}`).classList.add('active-source');
+
+                const timer = setInterval(() => {
+                    if (step <= nValue) {
+                        let encIdx = (srcIdx + step) % 26;
+                        let decIdx = (srcIdx - step + 26) % 26;
+
+                        for(let k=0; k<26; k++) {
+                            document.getElementById(`enc-arrow-${k}`).style.display = 'none';
+                            document.getElementById(`dec-arrow-${k}`).style.display = 'none';
+                        }
+
+                        document.getElementById(`enc-arrow-${encIdx}`).style.display = 'block';
+                        document.getElementById(`dec-arrow-${decIdx}`).style.display = 'block';
+
+                        if (step > 0 && step < nValue) {
+                            document.getElementById(`enc-box-${encIdx}`).classList.add('active-step');
+                            document.getElementById(`dec-box-${decIdx}`).classList.add('active-step');
+                        }
+
+                        statusBox.innerHTML = `Langkah ${step}/${nValue}: Pergerakan Huruf Pertama <b>'${firstChar}'</b> pada Jalur...`;
+                        step++;
+                    } else {
+                        clearInterval(timer);
+
+                        let encTarget = (srcIdx + nValue) % 26;
+                        let decTarget = (srcIdx - nValue + 26) % 26;
+
+                        document.getElementById(`enc-box-${encTarget}`).classList.add('active-target');
+                        document.getElementById(`dec-box-${decTarget}`).classList.add('active-target');
+
+                        statusBox.innerHTML = `✅ DEMO SELESAI! Penyulitan (Hijau -> Merah) & Nyahsulit (Merah -> Hijau) ditunjukkan dengan tepat.`;
+                    }
+                }, 300);
+
+            }, 2000);
+        }
+
+        buildStrips();
+        generateWheels();
+    </script>
+</body>
+</html>
